@@ -121,3 +121,25 @@ strings ./repro-zig-nosan | grep -c ubsan_rt   # 0
 
 `repro.scala` is the whole program; `build-one.sh <zig|zig-nosan|clang> <nixpkgs> <out>`
 is the cross-build harness (no external C deps — no `-L`/`-I` closure).
+
+## Reproducing without zig
+
+zig is incidental — it merely enables UBSan by default. The same diagnostic
+reproduces with **stock clang, natively, no cross-compilation**, on any AArch64
+machine (e.g. an Apple Silicon Mac — darwin/aarch64 takes the same
+`CAPTURE_SETJMP` path):
+
+```bash
+scala-cli --power package . -o ./repro-ubsan -f --native \
+  --native-compile -fsanitize=undefined --native-linking -fsanitize=undefined
+./repro-ubsan
+# Marker.c:149:24: runtime error: load of misaligned address 0x… for type
+#   'word_t *' (aka 'unsigned long *'), which requires 8 byte alignment
+# SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior … Marker.c:149:24
+```
+
+Stock clang's UBSan defaults to recover mode (prints and continues — the run
+still ends in `ok: -66560`); zig's runtime is trap-mode, which is why the same
+check aborts there. Note that Scala Native 0.5 officially supports UBSan via
+`NativeConfig.sanitizer` (`scala.scalanative.build.Sanitizer.UndefinedBehaviourSanitizer`),
+so this is reachable through first-party configuration alone.

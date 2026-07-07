@@ -2,3 +2,4 @@
 .bsp/
 repro-zig*
 repro-clang*
+repro-ubsan*
