@@ -1,0 +1,4 @@
+.scala-build/
+.bsp/
+repro-zig*
+repro-clang*
